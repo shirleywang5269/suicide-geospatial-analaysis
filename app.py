@@ -1,63 +1,61 @@
-import dash
+import pandas as pd     #(version 1.0.0)
+import plotly           #(version 4.5.0)
+import plotly.express as px
+
+import dash             #(version 1.8.0)
 import dash_core_components as dcc
 import dash_html_components as html
-import plotly.graph_objs as go
+from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
+# print(px.data.gapminder()[:15])
 
-########### Define your variables
-beers=['Chesapeake Stout', 'Snake Dog IPA', 'Imperial Porter', 'Double Dog IPA']
-ibu_values=[35, 60, 85, 75]
-abv_values=[5.4, 7.1, 9.2, 4.3]
-color1='lightblue'
-color2='darkgreen'
-mytitle='Beer Comparison'
-tabtitle='beer!'
-myheading='Flying Dog Beers'
-label1='IBU'
-label2='ABV'
-githublink='https://github.com/austinlasseter/flying-dog-beers'
-sourceurl='https://www.flyingdog.com/beers/'
+external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
-########### Set up the chart
-bitterness = go.Bar(
-    x=beers,
-    y=ibu_values,
-    name=label1,
-    marker={'color':color1}
-)
-alcohol = go.Bar(
-    x=beers,
-    y=abv_values,
-    name=label2,
-    marker={'color':color2}
-)
-
-beer_data = [bitterness, alcohol]
-beer_layout = go.Layout(
-    barmode='group',
-    title = mytitle
-)
-
-beer_fig = go.Figure(data=beer_data, layout=beer_layout)
-
-
-########### Initiate the app
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-server = app.server
-app.title=tabtitle
 
-########### Set up the layout
-app.layout = html.Div(children=[
-    html.H1(myheading),
-    dcc.Graph(
-        id='flyingdog',
-        figure=beer_fig
-    ),
-    html.A('Code on Github', href=githublink),
-    html.Br(),
-    html.A('Data Source', href=sourceurl),
-    ]
+#---------------------------------------------------------------
+app.layout = html.Div([
+
+    html.Div([
+        dcc.Graph(id='the_graph')
+    ]),
+
+    html.Div([
+        dcc.Input(id='input_state', type='number', inputMode='numeric', value=2007,
+                  max=2007, min=1952, step=5, required=True),
+        html.Button(id='submit_button', n_clicks=0, children='Submit'),
+        html.Div(id='output_state'),
+    ],style={'text-align': 'center'}),
+
+])
+
+#---------------------------------------------------------------
+@app.callback(
+    [Output('output_state', 'children'),
+    Output(component_id='the_graph', component_property='figure')],
+    [Input(component_id='submit_button', component_property='n_clicks')],
+    [State(component_id='input_state', component_property='value')]
 )
+
+def update_output(num_clicks, val_selected):
+    if val_selected is None:
+        raise PreventUpdate
+    else:
+        df = px.data.gapminder().query("year=={}".format(val_selected))
+        # print(df[:3])
+
+        fig = px.choropleth(df, locations="iso_alpha",
+                            color="lifeExp",
+                            hover_name="country",
+                            projection='natural earth',
+                            title='Life Expectancy by Year',
+                            color_continuous_scale=px.colors.sequential.Plasma)
+
+        fig.update_layout(title=dict(font=dict(size=28),x=0.5,xanchor='center'),
+                          margin=dict(l=60, r=60, t=50, b=50))
+
+        return ('The input value was "{}" and the button has been \
+                clicked {} times'.format(val_selected, num_clicks), fig)
 
 if __name__ == '__main__':
-    app.run_server()
+    app.run_server(debug=True)
