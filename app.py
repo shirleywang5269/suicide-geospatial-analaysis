@@ -58,4 +58,4 @@ def update_output(num_clicks, val_selected):
                 clicked {} times'.format(val_selected, num_clicks), fig)
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server()
